@@ -18,7 +18,14 @@ class User(db.Entity):
     id = PrimaryKey(int, auto=True)
     login = Required(str, unique=True)
     pwhash = Required(str, unique=True)
-    staffID = Optional(str)  # ID of staff which uses this account
+    roleID = Optional(str)
+    role = Required('Role')
+
+
+class Role(db.Entity):
+    id = PrimaryKey(int, auto=True)
+    name = Required(str, unique=True)
+    users = Set(User)
 
 
 @db_session
