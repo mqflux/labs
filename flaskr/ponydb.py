@@ -1,7 +1,8 @@
 from pony.orm import *
+from werkzeug.security import generate_password_hash
+
 
 db = Database()
-db.bind(provider='mysql', host='localhost', user='root', passwd='admin', db='labs')
 
 
 class Staff(db.Entity):
@@ -17,6 +18,15 @@ class User(db.Entity):
     id = PrimaryKey(int, auto=True)
     login = Required(str, unique=True)
     pwhash = Required(str, unique=True)
+    staffID = Optional(str)  # ID of staff which uses this account
 
 
-db.generate_mapping(create_tables=True)
+@db_session
+def create_account(login, password, bound_staff_id=None):
+
+    hashed = generate_password_hash(password)
+
+    if bound_staff_id is None:
+        User(login=login, pwhash=hashed)
+    else:
+        User(login=login, pwhash=hashed, staffID=bound_staff_id)

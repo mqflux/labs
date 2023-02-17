@@ -1,7 +1,11 @@
 import os
 
 from flask import Flask
-os.system("python ponydb.py")
+from flaskr.ponydb import db
+
+
+# flask --app flaskr run --debug
+# to start the server
 
 
 def create_app(test_config=None):
@@ -31,7 +35,11 @@ def create_app(test_config=None):
     def hello():
         return 'Hello, World!'
 
-    from . import auth
+    db.bind(provider='mysql', host='localhost', user='root', passwd='admin', db='labs')
+    db.generate_mapping(create_tables=True)
+
+    from . import auth, pages
     app.register_blueprint(auth.bp)
+    app.register_blueprint(pages.bp)
 
     return app
