@@ -12,3 +12,9 @@ bp = Blueprint('pages', __name__, url_prefix='')
 def db_view():
 
     return render_template("db_view.html")
+
+
+@bp.route("/")
+def index():
+    return render_template("wrapper.html")
+
