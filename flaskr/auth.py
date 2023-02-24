@@ -29,7 +29,6 @@ def login():
         if error is None:
             session.clear()
             session["user_id"] = entity.id
-            print(url_for("pages.db_view"))
             return redirect(url_for("pages.db_view"))
 
         flash(error)
@@ -53,7 +52,7 @@ def register():
         if error is None:
             try:
                 with db_session:
-                    User(login=username, pwhash=generate_password_hash(password))
+                    User(login=username, pwhash=generate_password_hash(password), role=1)
             except Exception:
                 error = f"User {username} is already registered."
             else:
