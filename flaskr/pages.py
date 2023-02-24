@@ -1,3 +1,7 @@
+import requests
+import xml.etree.ElementTree as et
+import os
+
 from pony.orm import db_session, select
 from flaskr.ponydb import db, User, Staff, Role
 
@@ -60,3 +64,45 @@ def prepare_table_template(ponyEntity):
 def index():
     return render_template("wrapper.html")
 
+
+@bp.route("/currencies")
+def currencies():
+    table_head = ["Num code", "Char code", "Unit", "Currency", "Rate"]
+    url = "https://cbr.ru/scripts/XML_daily_eng.asp?date_req=23/02/2023"
+
+    if load_currency_info(url):
+        parsed = parse_xml(f"./flaskr{url_for('static', filename='currency_info.xml')}")
+
+    return render_template("currencies.html", attributes=table_head, currencies=parsed)
+
+
+def parse_xml(xml_file):
+    parsed, attrs = [], []
+    tree = et.parse(xml_file)
+    root = tree.getroot()
+
+    for elem in tree.find('./Valute'):
+        attrs.append(elem.tag)
+
+    for i, elem in enumerate(root):
+        parsed.append([])
+        for attr in attrs:
+            parsed[i].append(elem.find(attr).text)
+        print(parsed[i])
+
+    return parsed
+
+
+def load_currency_info(url):
+    success = True
+
+    response = requests.get(url)
+    if response.status_code == 200:
+        content = response.content
+    else:
+        return False
+
+    with open(f"./flaskr{url_for('static', filename='currency_info.xml')}", 'wb+') as file:
+        file.write(content)
+
+    return success

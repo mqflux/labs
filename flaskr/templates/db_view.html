@@ -2,79 +2,73 @@
 
 {% block content %}
 
-<div class="containter bg-dark text-white">
-  <div class="container">
-    <div class="row text-center">
+<div class="container mt-5">
+  <div class="row text-center">
     <div class="col">
         <h3>Company DB</h3>
-      </div>
     </div>
   </div>
+</div>
 
-  <div class="container justify-content-center mt-5">
-    <table class="table text-white table-bordered">
-      <thead>
-        <tr>
-          {% for attr in attributes %}
+<div class="container-fluid mt-5 w-auto table-responsive">
+  <table class="table text-white table-bordered fixed">
+    <thead>
+      <tr>
+        {% for attr in attributes %}
 
-            {% if attr != "raddr" and attr != "tnumber" or role != 4 %}
-            <th scope="col">{{ attr }}</th>
-            {%endif%}
+          {% if attr != "raddr" and attr != "tnumber" or role != 4 %}
+          <th class="text-center" scope="col">{{ attr }}</th>
+          {%endif%}
 
-          {% endfor %}
-          
-        </tr>
-      </thead>
-      <tbody>
-          {% for user in users %}
-            <tr>
-              {% if role == 1  or role == 2 %}
-              <form method="post">
-
-                {% for i, value in user %}
-    
-                <th scope="row">
-                  <input value="{{value}}" type="{{attributes[i]}}" name="{{attributes[i]}}">
-                </th>
-    
-                {% endfor %}
-                <input type="submit" hidden />
-              </form>
-              {% endif %}
-
-              {% if role == 3 or role == 4 %}
-
-                {% for i, value in user %}
-
-                {% if attributes[i] != "raddr" and attributes[i] != "tnumber" or role != 4 %}
-                <th scope="row">{{ value }}</th>
-                {%endif%}
-                  
-    
-                {% endfor %}
-
-              {% endif %}
-              
-            </tr>
-          {% endfor %}
-          {% if role == 1%}
+        {% endfor %}
+        
+      </tr>
+    </thead>
+    <tbody>
+        {% for user in users %}
           <tr>
+            {% if role == 1  or role == 2 %}
             <form method="post">
-              {% for attr in attributes %}
 
-              <th scope="col">
-                <input placeholder="{{attr}}" type="{{attr}}" name="{{attr}}" required>
+              {% for i, value in user %}
+              <th scope="row">
+                <input value="{{value}}" type="{{attributes[i]}}" name="{{attributes[i]}}">
               </th>
-
               {% endfor %}
               <input type="submit" hidden />
             </form>
-          </tr>
-          {% endif %}
-      </tbody>
-    </table>
-  </div>
+            {% endif %}
 
+            {% if role == 3 or role == 4 %}
+
+              {% for i, value in user %}
+
+              {% if attributes[i] != "raddr" and attributes[i] != "tnumber" or role != 4 %}
+                <th class="text-center" scope="row">{{ value }}</th>
+              {%endif%}
+
+              {% endfor %}
+
+            {% endif %}
+            
+          </tr>
+        {% endfor %}
+        {% if role == 1%}
+        <tr>
+          <form method="post">
+            {% for attr in attributes %}
+
+            <th scope="col">
+              <input placeholder="{{attr}}" type="{{attr}}" name="{{attr}}" required>
+            </th>
+
+            {% endfor %}
+            <input type="submit" hidden />
+          </form>
+        </tr>
+        {% endif %}
+    </tbody>
+  </table>
 </div>
 
 {% endblock %}
