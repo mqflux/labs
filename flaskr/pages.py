@@ -1,6 +1,7 @@
 import requests
 import xml.etree.ElementTree as et
 import os
+import datetime
 
 from pony.orm import db_session, select
 from flaskr.ponydb import db, User, Staff, Role
@@ -35,7 +36,6 @@ def db_view():
 
         return redirect( url_for("pages.db_view"))
 
-
     attributes, users = prepare_table_template(Staff)
 
     return render_template("db_view.html", attributes=attributes, users=users, role=role)
@@ -65,18 +65,47 @@ def index():
     return render_template("wrapper.html")
 
 
-@bp.route("/currencies")
+@bp.route("/currencies", methods=("GET", "POST"))
 def currencies():
     table_head = ["Num code", "Char code", "Unit", "Currency", "Rate"]
-    url = "https://cbr.ru/scripts/XML_daily_eng.asp?date_req=23/02/2023"
+    date = datetime.date.today()
+    char_code = None
+    str_date = f"{(date.day - 1):02d}/{date.month:02d}/{date.year}"
+
+    print(str_date)
+
+    url = f"https://cbr.ru/scripts/XML_daily_eng.asp?date_req={str_date}"
+
+    if request.method == "POST":
+        print(request.form.to_dict())
+        char_code = request.form["char_code"]
+        if len(char_code) == 0:
+            char_code = None
 
     if load_currency_info(url):
-        parsed = parse_xml(f"./flaskr{url_for('static', filename='currency_info.xml')}")
+        parsed = parse_xml(f"./flaskr{url_for('static', filename='currency_info.xml')}", char_code)
+    else:
+        return redirect(url_for("bp.index"))
 
-    return render_template("currencies.html", attributes=table_head, currencies=parsed)
+    return render_template("currencies.html", attributes=table_head, currencies=parsed, date=str_date)
 
 
-def parse_xml(xml_file):
+@bp.route("/clients", methods=("GET", "POST"))
+def client_search():
+    pass
+
+
+@bp.route("/items", methods=("GET", "POST"))
+def item_stock():
+    pass
+
+
+@bp.route("/createorder", methods=("GET", "POST"))
+def new_order():
+    pass
+
+
+def parse_xml(xml_file, char_code):
     parsed, attrs = [], []
     tree = et.parse(xml_file)
     root = tree.getroot()
@@ -84,11 +113,19 @@ def parse_xml(xml_file):
     for elem in tree.find('./Valute'):
         attrs.append(elem.tag)
 
-    for i, elem in enumerate(root):
+    print(attrs)
+
+    i = 0
+    for elem in root:
+        if char_code is not None and elem.find("CharCode").text.lower() != char_code.lower():
+            continue
         parsed.append([])
+
         for attr in attrs:
             parsed[i].append(elem.find(attr).text)
         print(parsed[i])
+
+        i += 1
 
     return parsed
 
