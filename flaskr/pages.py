@@ -4,7 +4,7 @@ import os
 import datetime
 
 from pony.orm import db_session, select
-from flaskr.ponydb import db, User, Staff, Role
+from flaskr.ponydb import *
 
 from flask import (
     Blueprint, flash, g, redirect, render_template, request, session, url_for
@@ -13,17 +13,23 @@ from flask import (
 bp = Blueprint('pages', __name__, url_prefix='')
 
 
-@bp.route("/db_view", methods=["GET", "POST"])
-@db_session
-def db_view():
+def db_view_redirect():
+    return render_template("db_view.html")
+
+
+def db_view_staff():
     user = User.get(id=session["user_id"])
     role = user.role.id
+
+    print(request.args.get("name"))
+
     if request.method == "POST":
         req_dict = request.form.to_dict()
 
         staff = Staff.get(id=req_dict["id"])
 
         print(req_dict)
+
         if staff is None:
             role = req_dict["role"]
             fname = req_dict["fname"]
@@ -34,11 +40,52 @@ def db_view():
         else:
             staff.set(**req_dict)
 
-        return redirect( url_for("pages.db_view"))
+        return redirect(url_for("pages.db_view"))
 
     attributes, users = prepare_table_template(Staff)
 
-    return render_template("db_view.html", attributes=attributes, users=users, role=role)
+    return render_template("db_view.html", attributes=attributes, users=users, role=role, db_name="Staff")
+
+
+def db_view_client():
+    pass
+
+
+def db_view_item():
+    pass
+
+
+def db_view_order():
+    pass
+
+
+db_view_callbacks = {
+    "Staff": db_view_staff,
+    "User": db_view_redirect,
+    "Role": db_view_redirect,
+    "Client": db_view_client,
+    "Item": db_view_item,
+    "Order": db_view_order,
+    "None": db_view_redirect,
+}
+
+
+@bp.route("/db_view", methods=["GET", "POST"])
+@db_session
+def db_view():
+    db_name = request.args.get("name", type=str, default="None")
+    user = User.get(id=session["user_id"])
+    role = user.role.id
+
+    if db_name not in db_enumerate:
+        return db_view_redirect()
+
+    attributes, users = prepare_table_template(db_enumerate[db_name])
+
+    if request.method == "POST":
+        return db_view_callbacks[db_name]()
+
+    return render_template("db_view.html", attributes=attributes, users=users, role=role, db_name=db_name)
 
 
 @db_session
@@ -48,12 +95,15 @@ def prepare_table_template(ponyEntity):
     for a in ponyEntity._attrs_:
         attributes.append(a.name)
 
-    attributes = attributes
+    print(attributes)
 
+
+    #  fix empty attribute
     for i, u in enumerate(ponyEntity.select()):
         users.append([])
         dc = u.to_dict()
         for a in attributes:
+
             users[i].append(dc[a])
         users[i] = enumerate(users[i])
 
