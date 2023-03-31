@@ -2,16 +2,108 @@
 
 {% block content %}
 
+<script type="text/javascript" src="{{ url_for('static', filename='db.js') }}"></script>
+
+
+
 <div class="container mt-5">
   <div class="row text-center">
     <div class="col">
-        <h3>{{ db_name }} DB view</h3>
+        <h3>{{ db_name }} table</h3>
     </div>
   </div>
 </div>
 
-<div class="container-fluid mt-5 w-auto table-responsive">
-  <table class="table text-white table-bordered fixed">
+{% if db_name == "Order" %}
+
+<div class="container-fluid input-group w-50">
+  <span class="input-group-text user-select-none">🔎</span>
+  <input type="text" class="form-control" aria-label="Search for string in tables..." onkeyup="search()" placeholder="Search..." id="search">
+  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">
+    New order
+  </button>
+</div>
+
+<div class="modal fade text-dark" id="exampleModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <form ction="javascript:;" onsubmit="">
+        <div class="modal-header">
+          <h5 class="modal-title" id="exampleModalLabel">Create new order</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" onclick="$('.myAlert-top').hide()"></button>
+        </div>
+        
+        <div id="alert" class="myAlert-top alert alert-danger">
+          <div class="container-fluid">
+            <a href="#" class="close" onclick="$('.myAlert-top').hide()">&times;</a>
+            <a id="alertDescription"></a>
+          </div>
+        </div>
+
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="nameInput" class="form-label">Client name</label>
+            <select onchange="changedClient();" onfocus="this.selectedIndex = -1;" id="nameSelect" class="form-select">
+              {% for client in clients %}
+              <option>{{ client[1] }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <a id="amoney" class="mx-2">Money: {{clients[0][2]}}</a>
+            <a id="alimit" class="mx-2">Limit: {{clients[0][3]}}</a>
+            <a id="acredit" class="mx-2">Credit: {{clients[0][4]}}</a>
+          </div>
+          <div class="mb-3">
+            <label for="select" class="form-label">Payment type</label>
+            <select id="paymentSelect" class="form-select">
+              <option>Cash</option>
+              <option>Online</option>
+              <option>Credit</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="itemInputField" class="form-label">Items</label>
+            <div class="table-responsive">
+              <table id="modalTable" class="table">
+                <thead>
+                  <tr>
+                    <th class="text-center" scope="col">#</th>
+                    <th class="text-center" scope="col">Item Name</th>
+                    <th class="text-center" scope="col">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+
+                </tbody>
+              </table>
+            </div>
+            <a class="btn btn-primary rounded-0 btn-block" id="insertRow" href="#">Add new row</a>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <a class="mx-5" id="total">Total: 0</a>
+          <a onclick="onOrderSave()" class="btn btn-primary">Create</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% endif %}
+
+{% if db_name != "Order" %}
+
+<div class="container-fluid input-group w-50">
+  <span class="input-group-text user-select-none">🔎</span>
+  <input type="text" class="form-control" aria-label="Search for string in tables..." onkeyup="search()" placeholder="Search..." id="search">
+</div>
+
+{% endif %}
+
+<div class="container-fluid mt-4 w-auto table-responsive">
+  <table class="table text-white table-bordered fixed" id="table">
     <thead>
       <tr>
         {% for attr in attributes %}

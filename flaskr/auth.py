@@ -29,7 +29,7 @@ def login():
         if error is None:
             session.clear()
             session["user_id"] = entity.id
-            return redirect(url_for("pages.db_view"))
+            return redirect(url_for("pages.table_view"))
 
         flash(error)
 

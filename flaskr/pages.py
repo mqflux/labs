@@ -1,6 +1,6 @@
 import requests
 import xml.etree.ElementTree as et
-import os
+import json
 import datetime
 
 from pony.orm import db_session, select
@@ -13,8 +13,16 @@ from flask import (
 bp = Blueprint('pages', __name__, url_prefix='')
 
 
+payment_type_enum = {
+    0: "Cash",
+    1: "Online",
+    2: "Credit",
+    3: "Barter",
+    4: "Offset",
+}
+
 def db_view_redirect():
-    return render_template("db_view.html")
+    return render_template("clients.html")
 
 
 def db_view_staff():
@@ -40,7 +48,7 @@ def db_view_staff():
         else:
             staff.set(**req_dict)
 
-        return redirect(url_for("pages.db_view"))
+        return redirect(url_for("pages.table_view"))
 
     attributes, users = prepare_table_template(Staff)
 
@@ -72,7 +80,7 @@ db_view_callbacks = {
 
 @bp.route("/db_view", methods=["GET", "POST"])
 @db_session
-def db_view():
+def table_view():
     db_name = request.args.get("name", type=str, default="None")
     user = User.get(id=session["user_id"])
     role = user.role.id
@@ -80,34 +88,69 @@ def db_view():
     if db_name not in db_enumerate:
         return db_view_redirect()
 
-    attributes, users = prepare_table_template(db_enumerate[db_name])
+    attributes, data = prepare_table_template(db_enumerate[db_name])
+    data = [enumerate(item) for item in data]
 
     if request.method == "POST":
         return db_view_callbacks[db_name]()
 
-    return render_template("db_view.html", attributes=attributes, users=users, role=role, db_name=db_name)
+    if db_name == "Order":
+
+        _, client_data = prepare_table_template(db_enumerate["Client"])
+
+        return render_template("db_view.html", attributes=attributes, users=data, role=role, db_name=db_name,
+                               clients=client_data)
+
+    if db_name == "Client":
+        return client_view(role, db_name)
+
+    return render_template("db_view.html", attributes=attributes, users=data, role=role, db_name=db_name)
+
+
+@db_session
+def client_view(role, db_name):
+    attributes, data = prepare_table_template(db_enumerate[db_name])
+
+    attributes.append("total_spent")
+
+    for client in data:
+        db_client = Client.get(name=client[1])
+        total_spent = 0
+
+        db_orders = Order.select(client=db_client)
+
+        for order in db_orders:
+            print(order, [i for i in Ordered.select(order=order)])
+            total_spent = sum([e.item.cost * e.amount for e in Ordered.select(order=order)])
+
+        client.append(total_spent)
+
+    print(attributes, data)
+
+    data = [enumerate(item) for item in data]
+
+    return render_template("db_view.html", attributes=attributes, users=data, role=role, db_name=db_name)
 
 
 @db_session
 def prepare_table_template(ponyEntity):
-    attributes, users = [], []
+    attributes, content, raw_ent = [], [], ponyEntity.select()
 
     for a in ponyEntity._attrs_:
         attributes.append(a.name)
 
-    print(attributes)
-
-
     #  fix empty attribute
-    for i, u in enumerate(ponyEntity.select()):
-        users.append([])
+    for i, u in enumerate(raw_ent):
+
+        content.append([])
         dc = u.to_dict()
         for a in attributes:
+            if a not in dc:
+                attributes.pop(attributes.index(a))
+                continue
+            content[i].append(dc[a])
 
-            users[i].append(dc[a])
-        users[i] = enumerate(users[i])
-
-    return attributes, users
+    return attributes, content
 
 
 @bp.route("/")
@@ -140,21 +183,6 @@ def currencies():
     return render_template("currencies.html", attributes=table_head, currencies=parsed, date=str_date)
 
 
-@bp.route("/clients", methods=("GET", "POST"))
-def client_search():
-    pass
-
-
-@bp.route("/items", methods=("GET", "POST"))
-def item_stock():
-    pass
-
-
-@bp.route("/createorder", methods=("GET", "POST"))
-def new_order():
-    pass
-
-
 def parse_xml(xml_file, char_code):
     parsed, attrs = [], []
     tree = et.parse(xml_file)
@@ -162,8 +190,6 @@ def parse_xml(xml_file, char_code):
 
     for elem in tree.find('./Valute'):
         attrs.append(elem.tag)
-
-    print(attrs)
 
     i = 0
     for elem in root:
@@ -173,7 +199,6 @@ def parse_xml(xml_file, char_code):
 
         for attr in attrs:
             parsed[i].append(elem.find(attr).text)
-        print(parsed[i])
 
         i += 1
 
@@ -193,3 +218,51 @@ def load_currency_info(url):
         file.write(content)
 
     return success
+
+
+@bp.route("/js_db_data/<db_name>", methods=["GET"])
+def js_get(db_name):
+    attr, data = prepare_table_template(db_enumerate[db_name])
+    modified = []
+
+    for i in range(len(data)):
+        modified.append({})
+        for j in range(len(attr)):
+            modified[i][attr[j]] = data[i][j]
+
+    return json.dumps(modified)
+
+
+@bp.route("/js_create_order", methods=["POST"])
+@db_session
+def js_post():
+    js_data = json.loads(request.form["javascript_data"])
+    print(js_data)
+    db_client = Client.get(name=js_data["client"])
+    db_order = Order(client=db_client, date=datetime.now(), paytype=js_data["payment"])
+    resolve_payment(js_data, db_order, db_client)
+
+    return redirect("/index")
+
+
+def resolve_payment(js_data, order, client):
+    if js_data["payment"] == "Cash":
+        for item in js_data["items"]:
+            amount = int(item["amount"])
+            db_item = Item.get(name=item["name"])
+            db_item.stock -= amount
+            Ordered(item=db_item, amount=amount, order=order)
+    elif js_data["payment"] == "Online":
+        for item in js_data["items"]:
+            amount = int(item["amount"])
+            db_item = Item.get(name=item["name"])
+            db_item.stock -= amount
+            Ordered(item=db_item, amount=amount, order=order)
+            client.money -= amount * db_item.cost
+    elif js_data["payment"] == "Credit":
+        for item in js_data["items"]:
+            amount = int(item["amount"])
+            db_item = Item.get(name=item["name"])
+            db_item.stock -= amount
+            Ordered(item=db_item, amount=amount, order=order)
+            client.credit += amount * db_item.cost

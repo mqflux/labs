@@ -19,7 +19,6 @@ class User(db.Entity):
     id = PrimaryKey(int, auto=True)
     login = Required(str, unique=True)
     pwhash = Required(str, unique=True)
-    roleID = Optional(str)
     role = Required('Role')
 
 
@@ -31,6 +30,7 @@ class Role(db.Entity):
 
 class Client(db.Entity):
     id = PrimaryKey(int, auto=True)
+    name = Optional(str)
     money = Optional(float)
     limit = Optional(float)  # Credit limit
     credit = Optional(float)  # Current client's credit
@@ -41,18 +41,24 @@ class Client(db.Entity):
 class Item(db.Entity):
     id = PrimaryKey(int, auto=True)
     stock = Optional(int)
-    name = Optional(str)
+    name = Required(str, unique=True)
     cost = Optional(float)
-    orders = Set('Order')
+    ordereds = Set('Ordered')
 
 
 class Order(db.Entity):
     id = PrimaryKey(int, auto=True)
-    amount = Optional(int)
     date = Optional(datetime)
-    item = Required(Item)
     client = Required(Client)
     paytype = Optional(str)
+    ordereds = Set('Ordered')
+
+
+class Ordered(db.Entity):
+    id = PrimaryKey(int, auto=True)
+    amount = Optional(int)
+    item = Required(Item)
+    order = Required(Order)
 
 
 @db_session
@@ -72,5 +78,6 @@ db_enumerate = {
     "Role": Role,
     "Client": Client,
     "Item": Item,
-    "Order": Order
+    "Order": Order,
+    "Ordered": Ordered
 }
