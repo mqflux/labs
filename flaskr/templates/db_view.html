@@ -19,7 +19,7 @@
 <div class="container-fluid input-group w-50">
   <span class="input-group-text user-select-none">🔎</span>
   <input type="text" class="form-control" aria-label="Search for string in tables..." onkeyup="search()" placeholder="Search..." id="search">
-  <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">
+  <button id="modalBtn" type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal" onclick="update()">
     New order
   </button>
 </div>
@@ -49,14 +49,14 @@
               {% endfor %}
             </select>
           </div>
-          <div class="mb-3">
-            <a id="amoney" class="mx-2">Money: {{clients[0][2]}}</a>
-            <a id="alimit" class="mx-2">Limit: {{clients[0][3]}}</a>
-            <a id="acredit" class="mx-2">Credit: {{clients[0][4]}}</a>
+          <div class="mb-3 text-success">
+            <a id="amoney" class="mx-2 text-decoration-none">Money: {{clients[0][2]}}</a>
+            <a id="alimit" class="mx-2 text-decoration-none">Limit: {{clients[0][3]}}</a>
+            <a id="acredit" class="mx-2 text-decoration-none">Credit: {{clients[0][4]}}</a>
           </div>
           <div class="mb-3">
             <label for="select" class="form-label">Payment type</label>
-            <select id="paymentSelect" class="form-select">
+            <select onchange="changePayement();" onfocus="this.selectedIndex = -1;" id="paymentSelect" class="form-select">
               <option>Cash</option>
               <option>Online</option>
               <option>Credit</option>
@@ -83,7 +83,7 @@
         </div>
 
         <div class="modal-footer">
-          <a class="mx-5" id="total">Total: 0</a>
+          <a class="mx-5 mx-2 text-success text-decoration-none" id="total">Total: 0</a>
           <a onclick="onOrderSave()" class="btn btn-primary">Create</a>
         </div>
       </form>

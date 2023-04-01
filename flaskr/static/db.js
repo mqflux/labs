@@ -1,5 +1,10 @@
 var parsed_item;
 var parsed_client;
+var paymentType = "";
+var totalCheck = 0;
+var credit = 0;
+var money = 0;
+var limit = 0;
 
 $.get("/js_db_data/Item", function(data) {
     parsed_item = $.parseJSON(data);
